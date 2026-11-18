@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>音程トレーナー</title>
+<style>
+:root{--bg:#faf8f5;--card:#fff;--ink:#222;--sub:#777;--line:#e5e1da;--acc:#3b6fd8;--ok:#1f9d55;--near:#d89a1f;--ng:#d2453b}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:20px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:14px}
+label.chip input{margin:0}
+select{font-size:15px;padding:6px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.lbl{font-size:13px;color:var(--sub);margin:10px 0 6px}
+button{font-size:16px;border:none;border-radius:10px;padding:12px 14px;background:#eceae6;color:var(--ink)}
+button.main{background:var(--acc);color:#fff;font-weight:600;width:100%;font-size:18px}
+button:disabled{opacity:.4}
+.q{text-align:center}
+.q .task{font-size:15px;color:var(--sub)}
+.q .big{font-size:40px;font-weight:700;margin:6px 0}
+.q .note{font-size:13px;color:var(--sub)}
+.meter{position:relative;height:46px;border-radius:10px;background:linear-gradient(90deg,#f6d6d3 0,#f7ecd2 32%,#d6efdf 42%,#d6efdf 58%,#f7ecd2 68%,#f6d6d3 100%);margin:12px 0 4px}
+.meter .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#0003}
+.needle{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px;left:50%;transition:left .08s;display:none}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+.live{text-align:center;font-size:15px;min-height:22px;margin-top:6px}
+.result{text-align:center;font-size:22px;font-weight:700;min-height:30px;margin-top:8px}
+.ok{color:var(--ok)}.near{color:var(--near)}.ng{color:var(--ng)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--sub);font-weight:500}
+.small{font-size:12px;color:var(--sub)}
+.err{color:var(--ng);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>🎵 音程トレーナー</h1>
+
+<div class="card" id="setup">
+  <div class="lbl">声の高さ</div>
+  <select id="range">
+    <option value="male">低め（男性の声）</option>
+    <option value="female">高め（女性の声）</option>
+  </select>
+  <div class="lbl">方向</div>
+  <select id="dir">
+    <option value="up">上がる</option>
+    <option value="down">下がる</option>
+    <option value="both">両方</option>
+  </select>
+  <div class="lbl">練習する音程</div>
+  <div class="row" id="ivs"></div>
+</div>
+
+<div class="card">
+  <div class="q">
+    <div class="task" id="task">スタートを押すと、基準の音（ド）が鳴ります</div>
+    <div class="big" id="big">—</div>
+    <div class="note" id="note"></div>
+  </div>
+  <div class="meter"><div class="center"></div><div class="needle" id="needle"></div></div>
+  <div class="scale"><span>低い</span><span>ピッタリ</span><span>高い</span></div>
+  <div class="live" id="live"></div>
+  <div class="result" id="result"></div>
+  <div class="err" id="err"></div>
+  <div style="margin-top:12px"><button class="main" id="start">スタート</button></div>
+  <div class="btns">
+    <button id="again" disabled>基準の音をもう一度</button>
+    <button id="model" disabled>お手本を聞く</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <strong>記録（苦手な順）</strong>
+    <span class="small" id="today"></span>
+  </div>
+  <table id="stats"></table>
+  <div style="margin-top:10px"><button id="reset" style="font-size:13px;padding:8px 10px">記録を消す</button></div>
+  <p class="small">ピッタリ＝ズレ15セント以内（半音の約1/7）。記録はこのスマホのブラウザにだけ残ります。</p>
+</div>
+</main>
+
+<script>
+const IV=[
+ {s:1,n:"短2度"},{s:2,n:"長2度"},{s:3,n:"短3度"},{s:4,n:"長3度"},
+ {s:5,n:"完全4度"},{s:6,n:"増4度"},{s:7,n:"完全5度"},{s:8,n:"短6度"},
+ {s:9,n:"長6度"},{s:10,n:"短7度"},{s:11,n:"長7度"},{s:12,n:"完全8度"}];
+const DEF=[2,4,5,7,12];
+const DO=["ド","レ♭","レ","ミ♭","ミ","ファ","ファ♯","ソ","ラ♭","ラ","シ♭","シ"];
+const LET=["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const RANGE={male:[45,64],female:[55,74]};
+const $=id=>document.getElementById(id);
+const ivBox=$("ivs");
+IV.forEach(v=>{const l=document.createElement("label");l.className="chip";
+ l.innerHTML=`<input type="checkbox" value="${v.s}" ${DEF.includes(v.s)?"checked":""}>${v.n}`;ivBox.appendChild(l);});
+
+// 保存
+function load(){try{return JSON.parse(localStorage.getItem("solfege_v1"))||{}}catch(e){return{}}}
+function save(d){try{localStorage.setItem("solfege_v1",JSON.stringify(d))}catch(e){}}
+let data=load();
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+function renderStats(){
+ const st=data.st||{};const rows=Object.keys(st).map(k=>{const v=st[k];return{k,n:v.n,ok:v.ok,avg:v.sum/v.n}});
+ rows.sort((a,b)=>(a.ok/a.n)-(b.ok/b.n)||b.avg-a.avg);
+ $("stats").innerHTML=rows.length?"<tr><th>音程</th><th>回数</th><th>ピッタリ率</th><th>平均ズレ</th></tr>"+rows.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.ok/r.n*100)}%</td><td>${Math.round(r.avg)}セント</td></tr>`).join(""):'<tr><td class="small">まだ記録がありません</td></tr>';
+ const t=(data.day&&data.day[todayKey()])||0;$("today").textContent="今日 "+t+"問";
+}
+renderStats();
+$("reset").onclick=()=>{if($("reset").dataset.c){data={};save(data);renderStats();$("reset").textContent="記録を消す";delete $("reset").dataset.c}else{$("reset").textContent="もう一度押すと消えます";$("reset").dataset.c=1}};
+
+// 音
+let ctx,analyser,buf,micOn=false,q=null,listening=false,frames=[],raf;
+const f=m=>440*Math.pow(2,(m-69)/12);
+function tone(m,dur=1.0){
+ const t=ctx.currentTime;const g=ctx.createGain();g.connect(ctx.destination);
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.35,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+ [[1,"triangle",1],[2,"sine",0.3],[3,"sine",0.12]].forEach(([h,type,a])=>{const o=ctx.createOscillator();const og=ctx.createGain();o.type=type;o.frequency.value=f(m)*h;og.gain.value=a;o.connect(og);og.connect(g);o.start(t);o.stop(t+dur);});
+ return new Promise(r=>setTimeout(r,dur*1000));
+}
+async function initAudio(){
+ ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+ if(ctx.state==="suspended")await ctx.resume();
+ if(micOn)return true;
+ try{
+  const s=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  const src=ctx.createMediaStreamSource(s);analyser=ctx.createAnalyser();analyser.fftSize=2048;src.connect(analyser);
+  buf=new Float32Array(analyser.fftSize);micOn=true;loop();return true;
+ }catch(e){$("err").textContent="マイクが使えません。ブラウザの設定でマイクを許可してください。";return false}
+}
+// 音の高さを調べる（自己相関）
+function detect(b,sr){
+ let rms=0;for(let i=0;i<b.length;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/b.length);if(rms<0.012)return -1;
+ let r1=0,r2=b.length-1,th=0.2;for(let i=0;i<b.length/2;i++)if(Math.abs(b[i])<th){r1=i;break}
+ for(let i=1;i<b.length/2;i++)if(Math.abs(b[b.length-i])<th){r2=b.length-i;break}
+ const x=b.slice(r1,r2),n=x.length,c=new Array(n).fill(0);
+ for(let i=0;i<n;i++)for(let j=0;j<n-i;j++)c[i]+=x[j]*x[j+i];
+ let d=0;while(d<n-1&&c[d]>c[d+1])d++;
+ let mv=-1,mp=-1;for(let i=d;i<n;i++)if(c[i]>mv){mv=c[i];mp=i}
+ if(mp<1||mp>=n-1)return -1;
+ const a=(c[mp-1]+c[mp+1]-2*c[mp])/2,bb=(c[mp+1]-c[mp-1])/2;const T=a?mp-bb/(2*a):mp;
+ const hz=sr/T;return(hz>60&&hz<1200)?hz:-1;
+}
+function loop(){
+ raf=requestAnimationFrame(loop);
+ if(!listening||!q)return;
+ analyser.getFloatTimeDomainData(buf);
+ const hz=detect(buf,ctx.sampleRate);
+ if(hz<0){if(frames.length<15)frames=[];$("live").textContent="（歌ってください）";return}
+ const midi=69+12*Math.log2(hz/440);
+ let c=(midi-q.target)*100,oct="";
+ if(Math.abs(c)>600){const k=Math.round(c/1200);c-=k*1200;oct="（1オクターブ違い）"}
+ const rel=((Math.round(midi)-q.base)%12+12)%12;
+ $("live").textContent="いま："+DO[rel]+"　"+(c>0?"+":"")+Math.round(c)+"セント"+oct;
+ const nd=$("needle");nd.style.display="block";nd.style.left=(50+Math.max(-100,Math.min(100,c))/2)+"%";
+ frames.push(c);
+ if(frames.length>=55)finish();
+}
+function finish(){
+ listening=false;
+ const s=frames.slice(-35).sort((a,b)=>a-b);const c=s[Math.floor(s.length/2)];const ac=Math.abs(c);
+ const r=$("result");let cls,txt;
+ if(ac<=15){cls="ok";txt="ピッタリ！"}else if(ac<=35){cls="near";txt="おしい（"+(c>0?"少し高い":"少し低い")+" "+Math.round(ac)+"セント）"}
+ else{cls="ng";txt=(c>0?"高い":"低い")+"（"+Math.round(ac)+"セント）"}
+ r.className="result "+cls;r.textContent=txt;
+ const key=q.name+(q.sign>0?"↑":"↓");data.st=data.st||{};const st=data.st[key]=data.st[key]||{n:0,ok:0,sum:0};
+ st.n++;if(ac<=15)st.ok++;st.sum+=ac;data.day=data.day||{};data.day[todayKey()]=(data.day[todayKey()]||0)+1;save(data);renderStats();
+ $("start").textContent="次の問題";$("start").disabled=false;
+}
+function makeQ(){
+ const sel=[...ivBox.querySelectorAll("input:checked")].map(i=>+i.value);if(!sel.length){$("err").textContent="音程を1つ以上選んでください";return null}
+ const s=sel[Math.floor(Math.random()*sel.length)];const d=$("dir").value;
+ const sign=d==="up"?1:d==="down"?-1:(Math.random()<.5?1:-1);
+ const [lo,hi]=RANGE[$("range").value];
+ const minB=sign>0?lo:lo+s,maxB=sign>0?hi-s:hi;
+ const base=minB+Math.floor(Math.random()*(maxB-minB+1));
+ return{base,target:base+sign*s,sign,name:IV.find(v=>v.s===s).n,s};
+}
+async function playBase(){
+ listening=false;frames=[];$("result").textContent="";$("needle").style.display="none";
+ $("live").textContent="基準の音を聞いてください…";await tone(q.base,1.2);
+ $("live").textContent="（歌ってください）";frames=[];listening=true;
+}
+$("start").onclick=async()=>{
+ $("err").textContent="";if(!(await initAudio()))return;
+ q=makeQ();if(!q)return;
+ const tName=DO[((q.target-q.base)%12+12)%12];
+ $("task").textContent=q.name+(q.sign>0?"上":"下")+"を歌ってください";
+ $("big").textContent="ド → "+tName+(q.sign<0&&q.s===12?"（下）":"");
+ $("note").textContent="基準の音："+LET[q.base%12]+(Math.floor(q.base/12)-1);
+ $("start").textContent="判定中…";$("start").disabled=true;$("again").disabled=false;$("model").disabled=false;
+ await playBase();
+};
+$("again").onclick=async()=>{if(q){$("start").disabled=true;$("start").textContent="判定中…";await playBase()}};
+$("model").onclick=async()=>{if(!q)return;listening=false;await tone(q.base,0.8);await tone(q.target,1.2);frames=[];$("start").disabled=true;$("start").textContent="判定中…";$("result").textContent="";listening=true};
+</script>
+</body>
+</html>
