@@ -3,125 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#7b5cff">
 <title>音程トレーナー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#faf8f5;--card:#fff;--ink:#222;--sub:#777;--line:#e5e1da;--acc:#3b6fd8;--ok:#1f9d55;--near:#d89a1f;--ng:#d2453b}
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink)}
-main{max-width:520px;margin:0 auto;padding:16px 14px 40px}
-h1{font-size:20px;margin:4px 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-label.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:14px}
-label.chip input{margin:0}
-select{font-size:15px;padding:6px;border-radius:8px;border:1px solid var(--line);background:#fff}
-.lbl{font-size:13px;color:var(--sub);margin:10px 0 6px}
-button{font-size:16px;border:none;border-radius:10px;padding:12px 14px;background:#eceae6;color:var(--ink)}
-button.main{background:var(--acc);color:#fff;font-weight:600;width:100%;font-size:18px}
-button:disabled{opacity:.4}
-.q{text-align:center}
-.q .task{font-size:15px;color:var(--sub)}
-.q .big{font-size:40px;font-weight:700;margin:6px 0}
-.q .note{font-size:13px;color:var(--sub)}
-.meter{position:relative;height:46px;border-radius:10px;background:linear-gradient(90deg,#f6d6d3 0,#f7ecd2 32%,#d6efdf 42%,#d6efdf 58%,#f7ecd2 68%,#f6d6d3 100%);margin:12px 0 4px}
-.meter .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#0003}
-.needle{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:var(--ink);border-radius:2px;left:50%;transition:left .08s;display:none}
-.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
-.live{text-align:center;font-size:15px;min-height:22px;margin-top:6px}
-.result{text-align:center;font-size:22px;font-weight:700;min-height:30px;margin-top:8px}
+:root{--p:#7b5cff;--p2:#ff5ca8;--y:#ffc93c;--ok:#22c58b;--near:#ffa62b;--ng:#ff5c6c;--ink:#2b2350;--sub:#8a83a8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:"M PLUS Rounded 1c",-apple-system,"Hiragino Maru Gothic ProN",sans-serif;color:var(--ink);
+ background:linear-gradient(160deg,#ffe9f4 0%,#efe8ff 45%,#e3f4ff 100%);min-height:100vh;overflow-x:hidden}
+.bgnotes{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.18;font-size:34px}
+.bgnotes span{position:absolute;animation:float 9s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-22px) rotate(8deg)}}
+main{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:18px 14px 40px}
+h1{font-size:26px;font-weight:800;margin:4px 0 14px;text-align:center;
+ background:linear-gradient(90deg,var(--p),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{background:#ffffffd9;backdrop-filter:blur(6px);border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 8px 24px #7b5cff22}
+details.card summary{font-weight:800;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.card summary::after{content:"▼";color:var(--sub);font-size:12px}
+details[open].card summary::after{content:"▲"}
+.lbl{font-size:13px;color:var(--sub);margin:14px 0 6px;font-weight:700}
+.seg{display:flex;background:#f1edff;border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;padding:9px 4px;font-size:14px;border-radius:10px;background:transparent;color:var(--sub);font-weight:700}
+.seg button.on{background:#fff;color:var(--p);box-shadow:0 2px 8px #7b5cff33}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:2px solid #e6e0ff;background:#fff;border-radius:999px;padding:6px 11px;font-size:13px;font-weight:700;color:var(--sub)}
+.chip.on{border-color:var(--p);background:var(--p);color:#fff}
+button{font-family:inherit;border:none;cursor:pointer}
+.stage{text-align:center;position:relative}
+.task{font-size:15px;color:var(--sub);font-weight:700;min-height:22px}
+.pair{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0 4px}
+.bubble{width:96px;height:96px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ font-size:30px;font-weight:800;color:#fff;box-shadow:0 8px 18px #0002}
+.bubble small{font-size:12px;font-weight:700;opacity:.9}
+.b1{background:linear-gradient(135deg,#8f7bff,#6a4dff)}
+.b2{background:linear-gradient(135deg,#ff7dbb,#ff4f8f)}
+.arrow{font-size:28px;color:var(--p)}
+.bubble.pulse{animation:pulse .6s ease}
+@keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+.keyinfo{font-size:13px;color:var(--sub);min-height:18px}
+.meter{position:relative;height:54px;border-radius:27px;margin:16px 0 6px;overflow:hidden;
+ background:linear-gradient(90deg,#ffd0d6 0,#ffe6c4 30%,#c9f5e3 42%,#c9f5e3 58%,#ffe6c4 70%,#ffd0d6 100%)}
+.meter .center{position:absolute;left:50%;top:8px;bottom:8px;width:3px;margin-left:-1.5px;background:#fff;border-radius:2px}
+.needle{position:absolute;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;left:50%;
+ background:#fff;box-shadow:0 3px 10px #0003;display:none;transition:left .08s;font-size:18px;line-height:34px}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);font-weight:700;padding:0 6px}
+.live{font-size:15px;min-height:22px;margin-top:8px;font-weight:700}
+.result{font-size:26px;font-weight:800;min-height:38px;margin-top:6px}
+.result.show{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
 .ok{color:var(--ok)}.near{color:var(--near)}.ng{color:var(--ng)}
+.streak{position:absolute;top:-6px;right:0;background:var(--y);color:#6b4a00;font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;display:none}
+.go{width:100%;margin-top:14px;padding:16px;border-radius:18px;font-size:20px;font-weight:800;color:#fff;
+ background:linear-gradient(90deg,var(--p),var(--p2));box-shadow:0 8px 20px #ff5ca855}
+.go:active{transform:scale(.97)}
+.go:disabled{opacity:.55}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sub{padding:12px 8px;border-radius:14px;background:#f1edff;color:var(--p);font-size:14px;font-weight:800}
+.sub:disabled{opacity:.4}
 table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
-th{color:var(--sub);font-weight:500}
+td,th{padding:7px 4px;border-bottom:1px dashed #e6e0ff;text-align:left}
+th{color:var(--sub);font-weight:700;font-size:12px}
+.bar{height:8px;border-radius:4px;background:#eee;overflow:hidden;min-width:50px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),#7be0b8)}
 .small{font-size:12px;color:var(--sub)}
-.err{color:var(--ng);font-size:14px}
+.err{color:var(--ng);font-size:14px;font-weight:700}
+.conf{position:fixed;top:-30px;font-size:24px;z-index:9;pointer-events:none;animation:fall 1.6s ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.2}}
+.hd{display:flex;justify-content:space-between;align-items:center}
+.today{background:#f1edff;color:var(--p);font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px}
+.reset{margin-top:10px;background:transparent;color:var(--sub);font-size:12px;text-decoration:underline}
 </style>
 </head>
 <body>
+<div class="bgnotes"><span style="left:6%;top:10%">♪</span><span style="left:82%;top:16%;animation-delay:-2s">♫</span><span style="left:14%;top:62%;animation-delay:-4s">♬</span><span style="left:88%;top:70%;animation-delay:-1s">♩</span><span style="left:50%;top:88%;animation-delay:-6s">♪</span></div>
 <main>
-<h1>🎵 音程トレーナー</h1>
+<h1>🎤 音程トレーナー</h1>
 
-<div class="card" id="setup">
+<details class="card" id="setup">
+  <summary>⚙️ 設定</summary>
   <div class="lbl">声の高さ</div>
-  <select id="range">
-    <option value="male">低め（男性の声）</option>
-    <option value="female">高め（女性の声）</option>
-  </select>
+  <div class="seg" data-k="range"><button data-v="male">低め（男性）</button><button data-v="female">高め（女性）</button></div>
   <div class="lbl">方向</div>
-  <select id="dir">
-    <option value="up">上がる</option>
-    <option value="down">下がる</option>
-    <option value="both">両方</option>
-  </select>
+  <div class="seg" data-k="dir"><button data-v="up">上がる ⤴</button><button data-v="down">下がる ⤵</button><button data-v="both">両方</button></div>
+  <div class="lbl">キー（基準の音）</div>
+  <div class="chips" id="keys"></div>
+  <div class="lbl">読み方</div>
+  <div class="seg" data-k="read"><button data-v="move">移動ド</button><button data-v="fixed">固定ド</button></div>
+  <div class="small" style="margin-top:6px">移動ド：基準の音をいつも「ド」と読む ／ 固定ド：Cを「ド」と読む</div>
   <div class="lbl">練習する音程</div>
-  <div class="row" id="ivs"></div>
-</div>
+  <div class="chips" id="ivs"></div>
+</details>
 
 <div class="card">
-  <div class="q">
-    <div class="task" id="task">スタートを押すと、基準の音（ド）が鳴ります</div>
-    <div class="big" id="big">—</div>
-    <div class="note" id="note"></div>
+  <div class="stage">
+    <div class="streak" id="streak"></div>
+    <div class="task" id="task">スタートで基準の音が鳴るよ</div>
+    <div class="pair">
+      <div class="bubble b1" id="bb1"><small>基準</small><span id="n1">?</span></div>
+      <div class="arrow" id="arr">→</div>
+      <div class="bubble b2" id="bb2"><small>歌う音</small><span id="n2">?</span></div>
+    </div>
+    <div class="keyinfo" id="keyinfo"></div>
+    <div class="meter"><div class="center"></div><div class="needle" id="needle">🎵</div></div>
+    <div class="scale"><span>⬇ 低い</span><span>ピッタリ</span><span>高い ⬆</span></div>
+    <div class="live" id="live"></div>
+    <div class="result" id="result"></div>
+    <div class="err" id="err"></div>
   </div>
-  <div class="meter"><div class="center"></div><div class="needle" id="needle"></div></div>
-  <div class="scale"><span>低い</span><span>ピッタリ</span><span>高い</span></div>
-  <div class="live" id="live"></div>
-  <div class="result" id="result"></div>
-  <div class="err" id="err"></div>
-  <div style="margin-top:12px"><button class="main" id="start">スタート</button></div>
+  <button class="go" id="start">▶ スタート</button>
   <div class="btns">
-    <button id="again" disabled>基準の音をもう一度</button>
-    <button id="model" disabled>お手本を聞く</button>
+    <button class="sub" id="again" disabled>🔁 基準の音</button>
+    <button class="sub" id="model" disabled>👂 お手本</button>
   </div>
 </div>
 
 <div class="card">
-  <div class="row" style="justify-content:space-between">
-    <strong>記録（苦手な順）</strong>
-    <span class="small" id="today"></span>
-  </div>
+  <div class="hd"><strong>📊 記録（苦手な順）</strong><span class="today" id="today"></span></div>
   <table id="stats"></table>
-  <div style="margin-top:10px"><button id="reset" style="font-size:13px;padding:8px 10px">記録を消す</button></div>
+  <button class="reset" id="reset">記録を消す</button>
   <p class="small">ピッタリ＝ズレ15セント以内（半音の約1/7）。記録はこのスマホのブラウザにだけ残ります。</p>
 </div>
 </main>
 
 <script>
-const IV=[
- {s:1,n:"短2度"},{s:2,n:"長2度"},{s:3,n:"短3度"},{s:4,n:"長3度"},
- {s:5,n:"完全4度"},{s:6,n:"増4度"},{s:7,n:"完全5度"},{s:8,n:"短6度"},
- {s:9,n:"長6度"},{s:10,n:"短7度"},{s:11,n:"長7度"},{s:12,n:"完全8度"}];
-const DEF=[2,4,5,7,12];
-const DO=["ド","レ♭","レ","ミ♭","ミ","ファ","ファ♯","ソ","ラ♭","ラ","シ♭","シ"];
-const LET=["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+const IV=[{s:1,n:"短2度"},{s:2,n:"長2度"},{s:3,n:"短3度"},{s:4,n:"長3度"},{s:5,n:"完全4度"},{s:6,n:"増4度"},
+ {s:7,n:"完全5度"},{s:8,n:"短6度"},{s:9,n:"長6度"},{s:10,n:"短7度"},{s:11,n:"長7度"},{s:12,n:"完全8度"}];
+const MOVE=["ド","レ♭","レ","ミ♭","ミ","ファ","ファ♯","ソ","ラ♭","ラ","シ♭","シ"];
+const FIX=["ド","ド♯","レ","ミ♭","ミ","ファ","ファ♯","ソ","ソ♯","ラ","シ♭","シ"];
+const LET=["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
 const RANGE={male:[45,64],female:[55,74]};
 const $=id=>document.getElementById(id);
-const ivBox=$("ivs");
-IV.forEach(v=>{const l=document.createElement("label");l.className="chip";
- l.innerHTML=`<input type="checkbox" value="${v.s}" ${DEF.includes(v.s)?"checked":""}>${v.n}`;ivBox.appendChild(l);});
 
 // 保存
 function load(){try{return JSON.parse(localStorage.getItem("solfege_v1"))||{}}catch(e){return{}}}
-function save(d){try{localStorage.setItem("solfege_v1",JSON.stringify(d))}catch(e){}}
+function save(){try{localStorage.setItem("solfege_v1",JSON.stringify(data))}catch(e){}}
 let data=load();
+const cfg=Object.assign({range:"male",dir:"up",read:"move",key:"rand",ivs:[2,4,5,7,12]},data.cfg||{});
+function saveCfg(){data.cfg=cfg;save()}
+
+// 設定UI
+document.querySelectorAll(".seg").forEach(seg=>{
+ const k=seg.dataset.k;
+ seg.querySelectorAll("button").forEach(b=>{
+  b.classList.toggle("on",cfg[k]===b.dataset.v);
+  b.onclick=()=>{cfg[k]=b.dataset.v;seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));saveCfg();if(q)showQ()};
+ });
+});
+const keyBox=$("keys");
+[["rand","🎲 毎回ランダム"]].concat(LET.map((l,i)=>[String(i),l])).forEach(([v,t])=>{
+ const b=document.createElement("button");b.className="chip"+(cfg.key===v?" on":"");b.textContent=t;
+ b.onclick=()=>{cfg.key=v;keyBox.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===b));saveCfg()};keyBox.appendChild(b);
+});
+const ivBox=$("ivs");
+IV.forEach(v=>{const b=document.createElement("button");b.className="chip"+(cfg.ivs.includes(v.s)?" on":"");b.textContent=v.n;
+ b.onclick=()=>{const i=cfg.ivs.indexOf(v.s);if(i>=0)cfg.ivs.splice(i,1);else cfg.ivs.push(v.s);b.classList.toggle("on");saveCfg()};ivBox.appendChild(b);});
+
 function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
 function renderStats(){
- const st=data.st||{};const rows=Object.keys(st).map(k=>{const v=st[k];return{k,n:v.n,ok:v.ok,avg:v.sum/v.n}});
- rows.sort((a,b)=>(a.ok/a.n)-(b.ok/b.n)||b.avg-a.avg);
- $("stats").innerHTML=rows.length?"<tr><th>音程</th><th>回数</th><th>ピッタリ率</th><th>平均ズレ</th></tr>"+rows.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td>${Math.round(r.ok/r.n*100)}%</td><td>${Math.round(r.avg)}セント</td></tr>`).join(""):'<tr><td class="small">まだ記録がありません</td></tr>';
- const t=(data.day&&data.day[todayKey()])||0;$("today").textContent="今日 "+t+"問";
+ const st=data.st||{};const rows=Object.keys(st).map(k=>{const v=st[k];return{k,n:v.n,r:v.ok/v.n,avg:v.sum/v.n}});
+ rows.sort((a,b)=>a.r-b.r||b.avg-a.avg);
+ $("stats").innerHTML=rows.length?"<tr><th>音程</th><th>回数</th><th>ピッタリ率</th><th>平均ズレ</th></tr>"+rows.map(r=>`<tr><td>${r.k}</td><td>${r.n}</td><td><div class="bar"><i style="width:${Math.round(r.r*100)}%"></i></div>${Math.round(r.r*100)}%</td><td>${Math.round(r.avg)}¢</td></tr>`).join(""):'<tr><td class="small">まだ記録がありません。スタートしてみよう！</td></tr>';
+ $("today").textContent="今日 "+((data.day&&data.day[todayKey()])||0)+"問";
 }
 renderStats();
-$("reset").onclick=()=>{if($("reset").dataset.c){data={};save(data);renderStats();$("reset").textContent="記録を消す";delete $("reset").dataset.c}else{$("reset").textContent="もう一度押すと消えます";$("reset").dataset.c=1}};
+$("reset").onclick=()=>{const r=$("reset");if(r.dataset.c){data={cfg};save();renderStats();r.textContent="記録を消す";delete r.dataset.c}else{r.textContent="もう一度押すと消えます";r.dataset.c=1}};
 
 // 音
-let ctx,analyser,buf,micOn=false,q=null,listening=false,frames=[],raf;
-const f=m=>440*Math.pow(2,(m-69)/12);
+let ctx,analyser,buf,micOn=false,q=null,listening=false,frames=[],streak=0;
+const hzOf=m=>440*Math.pow(2,(m-69)/12);
 function tone(m,dur=1.0){
  const t=ctx.currentTime;const g=ctx.createGain();g.connect(ctx.destination);
  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.35,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+dur);
- [[1,"triangle",1],[2,"sine",0.3],[3,"sine",0.12]].forEach(([h,type,a])=>{const o=ctx.createOscillator();const og=ctx.createGain();o.type=type;o.frequency.value=f(m)*h;og.gain.value=a;o.connect(og);og.connect(g);o.start(t);o.stop(t+dur);});
+ [[1,"triangle",1],[2,"sine",0.3],[3,"sine",0.12]].forEach(([h,type,a])=>{const o=ctx.createOscillator(),og=ctx.createGain();o.type=type;o.frequency.value=hzOf(m)*h;og.gain.value=a;o.connect(og);og.connect(g);o.start(t);o.stop(t+dur)});
  return new Promise(r=>setTimeout(r,dur*1000));
 }
 async function initAudio(){
@@ -134,10 +188,9 @@ async function initAudio(){
   buf=new Float32Array(analyser.fftSize);micOn=true;loop();return true;
  }catch(e){$("err").textContent="マイクが使えません。ブラウザの設定でマイクを許可してください。";return false}
 }
-// 音の高さを調べる（自己相関）
 function detect(b,sr){
  let rms=0;for(let i=0;i<b.length;i++)rms+=b[i]*b[i];rms=Math.sqrt(rms/b.length);if(rms<0.012)return -1;
- let r1=0,r2=b.length-1,th=0.2;for(let i=0;i<b.length/2;i++)if(Math.abs(b[i])<th){r1=i;break}
+ let r1=0,r2=b.length-1;const th=0.2;for(let i=0;i<b.length/2;i++)if(Math.abs(b[i])<th){r1=i;break}
  for(let i=1;i<b.length/2;i++)if(Math.abs(b[b.length-i])<th){r2=b.length-i;break}
  const x=b.slice(r1,r2),n=x.length,c=new Array(n).fill(0);
  for(let i=0;i<n;i++)for(let j=0;j<n-i;j++)c[i]+=x[j]*x[j+i];
@@ -147,58 +200,66 @@ function detect(b,sr){
  const a=(c[mp-1]+c[mp+1]-2*c[mp])/2,bb=(c[mp+1]-c[mp-1])/2;const T=a?mp-bb/(2*a):mp;
  const hz=sr/T;return(hz>60&&hz<1200)?hz:-1;
 }
+// 読み方に合わせた名前
+function nm(m){return cfg.read==="fixed"?FIX[((m%12)+12)%12]:MOVE[(((m-q.base)%12)+12)%12]}
 function loop(){
- raf=requestAnimationFrame(loop);
+ requestAnimationFrame(loop);
  if(!listening||!q)return;
  analyser.getFloatTimeDomainData(buf);
  const hz=detect(buf,ctx.sampleRate);
- if(hz<0){if(frames.length<15)frames=[];$("live").textContent="（歌ってください）";return}
+ if(hz<0){if(frames.length<15)frames=[];$("live").textContent="🎙 歌ってみて！";return}
  const midi=69+12*Math.log2(hz/440);
  let c=(midi-q.target)*100,oct="";
  if(Math.abs(c)>600){const k=Math.round(c/1200);c-=k*1200;oct="（1オクターブ違い）"}
- const rel=((Math.round(midi)-q.base)%12+12)%12;
- $("live").textContent="いま："+DO[rel]+"　"+(c>0?"+":"")+Math.round(c)+"セント"+oct;
- const nd=$("needle");nd.style.display="block";nd.style.left=(50+Math.max(-100,Math.min(100,c))/2)+"%";
+ $("live").textContent="いま："+nm(Math.round(midi))+"　"+(c>0?"+":"")+Math.round(c)+"¢"+oct;
+ const nd=$("needle");nd.style.display="block";nd.style.left=(50+Math.max(-92,Math.min(92,c))/2)+"%";
  frames.push(c);
  if(frames.length>=55)finish();
 }
+function confetti(){const e=["🎉","✨","🎵","⭐","💖","🎶"];for(let i=0;i<18;i++){const s=document.createElement("span");s.className="conf";s.textContent=e[i%e.length];s.style.left=Math.random()*100+"vw";s.style.animationDelay=Math.random()*.4+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),2200)}}
 function finish(){
  listening=false;
  const s=frames.slice(-35).sort((a,b)=>a-b);const c=s[Math.floor(s.length/2)];const ac=Math.abs(c);
  const r=$("result");let cls,txt;
- if(ac<=15){cls="ok";txt="ピッタリ！"}else if(ac<=35){cls="near";txt="おしい（"+(c>0?"少し高い":"少し低い")+" "+Math.round(ac)+"セント）"}
- else{cls="ng";txt=(c>0?"高い":"低い")+"（"+Math.round(ac)+"セント）"}
- r.className="result "+cls;r.textContent=txt;
+ if(ac<=15){cls="ok";txt="🎯 ピッタリ！";streak++;confetti()}
+ else if(ac<=35){cls="near";txt="👌 おしい！"+(c>0?"少し高い":"少し低い")+" "+Math.round(ac)+"¢";streak=0}
+ else{cls="ng";txt=(c>0?"⬆ 高い":"⬇ 低い")+"（"+Math.round(ac)+"¢）";streak=0}
+ r.className="result "+cls;void r.offsetWidth;r.classList.add("show");r.textContent=txt;
+ const sk=$("streak");sk.style.display=streak>=2?"block":"none";sk.textContent="🔥 "+streak+"連続";
  const key=q.name+(q.sign>0?"↑":"↓");data.st=data.st||{};const st=data.st[key]=data.st[key]||{n:0,ok:0,sum:0};
- st.n++;if(ac<=15)st.ok++;st.sum+=ac;data.day=data.day||{};data.day[todayKey()]=(data.day[todayKey()]||0)+1;save(data);renderStats();
- $("start").textContent="次の問題";$("start").disabled=false;
+ st.n++;if(ac<=15)st.ok++;st.sum+=ac;data.day=data.day||{};data.day[todayKey()]=(data.day[todayKey()]||0)+1;save();renderStats();
+ $("start").textContent="▶ 次の問題";$("start").disabled=false;
 }
 function makeQ(){
- const sel=[...ivBox.querySelectorAll("input:checked")].map(i=>+i.value);if(!sel.length){$("err").textContent="音程を1つ以上選んでください";return null}
- const s=sel[Math.floor(Math.random()*sel.length)];const d=$("dir").value;
- const sign=d==="up"?1:d==="down"?-1:(Math.random()<.5?1:-1);
- const [lo,hi]=RANGE[$("range").value];
- const minB=sign>0?lo:lo+s,maxB=sign>0?hi-s:hi;
- const base=minB+Math.floor(Math.random()*(maxB-minB+1));
+ if(!cfg.ivs.length){$("err").textContent="練習する音程を1つ以上選んでね（⚙️設定）";return null}
+ const s=cfg.ivs[Math.floor(Math.random()*cfg.ivs.length)];
+ const sign=cfg.dir==="up"?1:cfg.dir==="down"?-1:(Math.random()<.5?1:-1);
+ const [lo,hi]=RANGE[cfg.range];const minB=sign>0?lo:lo+s,maxB=sign>0?hi-s:hi;
+ let cands=[];for(let m=minB;m<=maxB;m++)if(cfg.key==="rand"||m%12===+cfg.key)cands.push(m);
+ if(!cands.length){for(let m=minB-12;m<=maxB+12;m++)if(m%12===+cfg.key)cands.push(m)}
+ const base=cands[Math.floor(Math.random()*cands.length)];
  return{base,target:base+sign*s,sign,name:IV.find(v=>v.s===s).n,s};
+}
+function showQ(){
+ $("task").textContent=q.name+(q.sign>0?"上":"下")+"を歌おう";
+ $("n1").textContent=nm(q.base);$("n2").textContent=nm(q.target);$("arr").textContent=q.sign>0?"⤴":"⤵";
+ $("keyinfo").textContent="キー："+LET[q.base%12]+"（基準の音 "+LET[q.base%12]+(Math.floor(q.base/12)-1)+"）";
 }
 async function playBase(){
  listening=false;frames=[];$("result").textContent="";$("needle").style.display="none";
- $("live").textContent="基準の音を聞いてください…";await tone(q.base,1.2);
- $("live").textContent="（歌ってください）";frames=[];listening=true;
+ $("start").textContent="🎧 判定中…";$("start").disabled=true;
+ $("live").textContent="👂 基準の音を聞いてね";$("bb1").classList.remove("pulse");void $("bb1").offsetWidth;$("bb1").classList.add("pulse");
+ await tone(q.base,1.2);$("live").textContent="🎙 歌ってみて！";frames=[];listening=true;
 }
 $("start").onclick=async()=>{
  $("err").textContent="";if(!(await initAudio()))return;
- q=makeQ();if(!q)return;
- const tName=DO[((q.target-q.base)%12+12)%12];
- $("task").textContent=q.name+(q.sign>0?"上":"下")+"を歌ってください";
- $("big").textContent="ド → "+tName+(q.sign<0&&q.s===12?"（下）":"");
- $("note").textContent="基準の音："+LET[q.base%12]+(Math.floor(q.base/12)-1);
- $("start").textContent="判定中…";$("start").disabled=true;$("again").disabled=false;$("model").disabled=false;
+ q=makeQ();if(!q)return;showQ();$("again").disabled=false;$("model").disabled=false;$("setup").open=false;
  await playBase();
 };
-$("again").onclick=async()=>{if(q){$("start").disabled=true;$("start").textContent="判定中…";await playBase()}};
-$("model").onclick=async()=>{if(!q)return;listening=false;await tone(q.base,0.8);await tone(q.target,1.2);frames=[];$("start").disabled=true;$("start").textContent="判定中…";$("result").textContent="";listening=true};
+$("again").onclick=()=>{if(q)playBase()};
+$("model").onclick=async()=>{if(!q)return;listening=false;$("start").disabled=true;$("start").textContent="🎧 判定中…";
+ await tone(q.base,0.8);$("bb2").classList.remove("pulse");void $("bb2").offsetWidth;$("bb2").classList.add("pulse");
+ await tone(q.target,1.2);frames=[];$("result").textContent="";listening=true;$("live").textContent="🎙 歌ってみて！"};
 </script>
 </body>
 </html>
