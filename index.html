@@ -73,12 +73,36 @@ th{color:var(--sub);font-weight:700;font-size:12px}
 .hd{display:flex;justify-content:space-between;align-items:center}
 .today{background:#f1edff;color:var(--p);font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px}
 .reset{margin-top:10px;background:transparent;color:var(--sub);font-size:12px;text-decoration:underline}
+.lv{display:flex;align-items:center;gap:10px}
+.lvnum{font-weight:800;font-size:20px;color:var(--p);white-space:nowrap}
+.xpbar{flex:1;height:12px;background:#efeaff;border-radius:6px;overflow:hidden}
+.xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--y),var(--p2));transition:width .6s}
+.xptxt{font-size:12px;color:var(--sub);white-space:nowrap;font-weight:700}
+.minis{display:flex;gap:6px;margin-top:10px;font-size:12px;color:var(--sub);font-weight:700;flex-wrap:wrap}
+.minis span{background:#f7f4ff;border-radius:999px;padding:3px 9px}
+.prog{font-weight:800;color:var(--p2);font-size:15px;min-height:20px;margin-bottom:4px}
+.toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140px);background:#fff;border-radius:18px;padding:12px 20px;font-weight:800;box-shadow:0 10px 30px #0003;z-index:20;transition:transform .35s cubic-bezier(.2,1.4,.4,1);max-width:90vw;text-align:center}
+.toast.show{transform:translate(-50%,0)}
+.modal{position:fixed;inset:0;background:#2b235099;display:none;align-items:center;justify-content:center;z-index:15;padding:20px}
+.modal.show{display:flex}
+.mbox{background:#fff;border-radius:26px;padding:24px;text-align:center;width:100%;max-width:360px;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+.rank{font-size:80px;font-weight:800;line-height:1.1;background:linear-gradient(135deg,var(--y),var(--p2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.total{font-size:32px;font-weight:800}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.bd{text-align:center;font-size:11px;font-weight:700;background:#f7f4ff;border-radius:14px;padding:8px 2px}
+.bd b{display:block;font-size:26px}
+.bd.lock{color:#aaa;filter:grayscale(1);opacity:.5}
 </style>
 </head>
 <body>
 <div class="bgnotes"><span style="left:6%;top:10%">♪</span><span style="left:82%;top:16%;animation-delay:-2s">♫</span><span style="left:14%;top:62%;animation-delay:-4s">♬</span><span style="left:88%;top:70%;animation-delay:-1s">♩</span><span style="left:50%;top:88%;animation-delay:-6s">♪</span></div>
 <main>
 <h1>🎤 音程トレーナー</h1>
+
+<div class="card">
+  <div class="lv"><div class="lvnum" id="lvnum">Lv.1</div><div class="xpbar"><i id="xpbar"></i></div><div class="xptxt" id="xptxt"></div></div>
+  <div class="minis"><span id="mDays"></span><span id="mBest"></span><span id="mBadge"></span></div>
+</div>
 
 <details class="card" id="setup">
   <summary>⚙️ 設定</summary>
@@ -96,8 +120,10 @@ th{color:var(--sub);font-weight:700;font-size:12px}
 </details>
 
 <div class="card">
+  <div class="seg" data-k="mode" style="margin-bottom:14px"><button data-v="free">🎵 フリー練習</button><button data-v="game">🎮 チャレンジ10問</button></div>
   <div class="stage">
     <div class="streak" id="streak"></div>
+    <div class="prog" id="prog"></div>
     <div class="task" id="task">スタートで基準の音が鳴るよ</div>
     <div class="pair">
       <div class="bubble b1" id="bb1"><small>基準</small><span id="n1">?</span></div>
@@ -124,7 +150,22 @@ th{color:var(--sub);font-weight:700;font-size:12px}
   <button class="reset" id="reset">記録を消す</button>
   <p class="small">ピッタリ＝ズレ15セント以内（半音の約1/7）。記録はこのスマホのブラウザにだけ残ります。</p>
 </div>
+
+<div class="card">
+  <div class="hd"><strong>🏅 バッジ</strong><span class="today" id="bdCount"></span></div>
+  <div class="badges" id="badges"></div>
+</div>
 </main>
+<div class="modal" id="modal"><div class="mbox">
+  <div class="small">🎮 チャレンジ結果</div>
+  <div class="rank" id="mRank">S</div>
+  <div class="total" id="mTotal"></div>
+  <div class="small" id="mBestTxt"></div>
+  <div class="small" id="mDetail" style="margin:8px 0"></div>
+  <button class="go" id="mAgain">もう一回！</button>
+  <button class="reset" id="mClose">閉じる</button>
+</div></div>
+<div class="toast" id="toast"></div>
 
 <script>
 const IV=[{s:1,n:"短2度"},{s:2,n:"長2度"},{s:3,n:"短3度"},{s:4,n:"長3度"},{s:5,n:"完全4度"},{s:6,n:"増4度"},
@@ -139,7 +180,7 @@ const $=id=>document.getElementById(id);
 function load(){try{return JSON.parse(localStorage.getItem("solfege_v1"))||{}}catch(e){return{}}}
 function save(){try{localStorage.setItem("solfege_v1",JSON.stringify(data))}catch(e){}}
 let data=load();
-const cfg=Object.assign({range:"male",dir:"up",read:"move",key:"rand",ivs:[2,4,5,7,12]},data.cfg||{});
+const cfg=Object.assign({range:"male",dir:"up",read:"move",key:"rand",ivs:[2,4,5,7,12],mode:"free"},data.cfg||{});
 function saveCfg(){data.cfg=cfg;save()}
 
 // 設定UI
@@ -147,7 +188,7 @@ document.querySelectorAll(".seg").forEach(seg=>{
  const k=seg.dataset.k;
  seg.querySelectorAll("button").forEach(b=>{
   b.classList.toggle("on",cfg[k]===b.dataset.v);
-  b.onclick=()=>{cfg[k]=b.dataset.v;seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));saveCfg();if(q)showQ()};
+  b.onclick=()=>{cfg[k]=b.dataset.v;seg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));saveCfg();if(k==="mode")resetGame();else if(q)showQ()};
  });
 });
 const keyBox=$("keys");
@@ -167,7 +208,7 @@ function renderStats(){
  $("today").textContent="今日 "+((data.day&&data.day[todayKey()])||0)+"問";
 }
 renderStats();
-$("reset").onclick=()=>{const r=$("reset");if(r.dataset.c){data={cfg};save();renderStats();r.textContent="記録を消す";delete r.dataset.c}else{r.textContent="もう一度押すと消えます";r.dataset.c=1}};
+$("reset").onclick=()=>{const r=$("reset");if(r.dataset.c){data={cfg};save();renderStats();renderLv();renderBadges();r.textContent="記録を消す";delete r.dataset.c}else{r.textContent="もう一度押すと消えます";r.dataset.c=1}};
 
 // 音
 let ctx,analyser,buf,micOn=false,q=null,listening=false,frames=[],streak=0;
@@ -227,9 +268,67 @@ function finish(){
  r.className="result "+cls;void r.offsetWidth;r.classList.add("show");r.textContent=txt;
  const sk=$("streak");sk.style.display=streak>=2?"block":"none";sk.textContent="🔥 "+streak+"連続";
  const key=q.name+(q.sign>0?"↑":"↓");data.st=data.st||{};const st=data.st[key]=data.st[key]||{n:0,ok:0,sum:0};
- st.n++;if(ac<=15)st.ok++;st.sum+=ac;data.day=data.day||{};data.day[todayKey()]=(data.day[todayKey()]||0)+1;save();renderStats();
- $("start").textContent="▶ 次の問題";$("start").disabled=false;
+ st.n++;if(ac<=15)st.ok++;st.sum+=ac;data.day=data.day||{};data.day[todayKey()]=(data.day[todayKey()]||0)+1;
+ award(ac,st);
+ $("start").disabled=false;$("start").textContent="▶ 次の問題";
+ if(game&&game.scores.length<game.i){const sc=scoreOf(ac);game.scores.push(sc);if(ac<=15)game.perf++;r.textContent=txt+"　+"+sc+"点";showProg();if(game.i>=10)setTimeout(endGame,900)}
+ save();renderStats();
 }
+
+// ゲーム
+let game=null;
+function scoreOf(ac){return ac<=5?100:Math.max(0,Math.round(100-(ac-5)*100/45))}
+function showProg(){$("prog").textContent=game?"🎮 第"+game.i+"問 / 10　合計 "+game.scores.reduce((a,b)=>a+b,0)+"点":""}
+function resetGame(){game=null;listening=false;showProg();$("start").disabled=false;$("start").textContent=cfg.mode==="game"?"🎮 チャレンジ開始":"▶ スタート";$("result").textContent=""}
+function endGame(){
+ const t=game.scores.reduce((a,b)=>a+b,0);const rk=t>=900?"S":t>=750?"A":t>=550?"B":t>=350?"C":"D";
+ const nb=t>(data.best||0);if(nb)data.best=t;
+ addXP(Math.round(t/10));if(t>=900)give("gameS");if(game.perf===10)give("perfect");save();renderLv();renderBadges();
+ $("mRank").textContent=rk;$("mTotal").textContent=t+" / 1000点";
+ $("mBestTxt").textContent=nb?"🎉 自己ベスト更新！":"自己ベスト "+data.best+"点";
+ $("mDetail").textContent="ピッタリ "+game.perf+"問　ボーナス +"+Math.round(t/10)+"XP";
+ $("modal").classList.add("show");if(nb||rk==="S")confetti();
+ $("start").textContent="🎮 もう一回チャレンジ";
+}
+$("mClose").onclick=()=>$("modal").classList.remove("show");
+$("mAgain").onclick=()=>{$("modal").classList.remove("show");$("start").click()};
+
+// レベル・バッジ
+const BADGES=[
+ {id:"first",i:"🐣",n:"はじめの一歩",h:"1問答える"},{id:"p10",i:"🎯",n:"ピッタリ10",h:"ピッタリ10回"},
+ {id:"p100",i:"🏹",n:"ピッタリ100",h:"ピッタリ100回"},{id:"s5",i:"🔥",n:"5連続",h:"5連続ピッタリ"},
+ {id:"s10",i:"☄️",n:"10連続",h:"10連続ピッタリ"},{id:"d3",i:"📅",n:"3日連続",h:"3日続けて練習"},
+ {id:"d10",i:"🗓️",n:"10日連続",h:"10日続けて練習"},{id:"q500",i:"💪",n:"500問",h:"合計500問"},
+ {id:"keys",i:"🎹",n:"全キー制覇",h:"12キー全部で練習"},{id:"gameS",i:"👑",n:"Sランク",h:"チャレンジ900点以上"},
+ {id:"perfect",i:"💎",n:"パーフェクト",h:"チャレンジ全問ピッタリ"},{id:"master",i:"🎓",n:"音程マスター",h:"1つの音程で20回以上・ピッタリ率80%"}];
+function lvInfo(xp){let lv=1,x=xp;while(x>=lv*100){x-=lv*100;lv++}return{lv,x,need:lv*100}}
+let tq=[],tbusy=false;
+function toast(t){tq.push(t);if(!tbusy)nextToast()}
+function nextToast(){const t=tq.shift();if(!t){tbusy=false;return}tbusy=true;const el=$("toast");el.textContent=t;el.classList.add("show");setTimeout(()=>{el.classList.remove("show");setTimeout(nextToast,400)},1900)}
+function addXP(n){const b=lvInfo(data.xp||0).lv;data.xp=(data.xp||0)+n;const a=lvInfo(data.xp).lv;if(a>b){toast("⬆ レベルアップ！ Lv."+a);confetti()}}
+function give(id){data.badges=data.badges||{};if(data.badges[id])return;data.badges[id]=todayKey();const b=BADGES.find(x=>x.id===id);toast("🏅 バッジ獲得！ "+b.i+" "+b.n)}
+function yKey(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}
+function award(ac,st){
+ const ok=ac<=15;data.q=(data.q||0)+1;if(ok)data.p=(data.p||0)+1;
+ const t=todayKey();if(data.lastDay!==t){data.dayStreak=data.lastDay===yKey()?(data.dayStreak||0)+1:1;data.lastDay=t}
+ data.keys=data.keys||{};data.keys[q.base%12]=1;
+ addXP(ok?20:ac<=35?12:8);
+ give("first");if(data.p>=10)give("p10");if(data.p>=100)give("p100");if(streak>=5)give("s5");if(streak>=10)give("s10");
+ if(data.dayStreak>=3)give("d3");if(data.dayStreak>=10)give("d10");if(data.q>=500)give("q500");
+ if(Object.keys(data.keys).length>=12)give("keys");if(st.n>=20&&st.ok/st.n>=.8)give("master");
+ renderLv();renderBadges();
+}
+function renderLv(){
+ const L=lvInfo(data.xp||0);$("lvnum").textContent="Lv."+L.lv;$("xpbar").style.width=(L.x/L.need*100)+"%";$("xptxt").textContent=L.x+" / "+L.need+" XP";
+ const alive=data.lastDay===todayKey()||data.lastDay===yKey();
+ $("mDays").textContent="📅 "+(alive?data.dayStreak||0:0)+"日連続";$("mBest").textContent="🏆 ベスト "+(data.best||0)+"点";
+ $("mBadge").textContent="🏅 "+Object.keys(data.badges||{}).length+" / "+BADGES.length;
+}
+function renderBadges(){
+ const got=data.badges||{};$("bdCount").textContent=Object.keys(got).length+" / "+BADGES.length;
+ $("badges").innerHTML=BADGES.map(b=>got[b.id]?`<div class="bd"><b>${b.i}</b>${b.n}</div>`:`<div class="bd lock"><b>${b.i}</b>${b.h}</div>`).join("");
+}
+renderLv();renderBadges();if(cfg.mode==="game")$("start").textContent="🎮 チャレンジ開始";
 function makeQ(){
  if(!cfg.ivs.length){$("err").textContent="練習する音程を1つ以上選んでね（⚙️設定）";return null}
  const s=cfg.ivs[Math.floor(Math.random()*cfg.ivs.length)];
@@ -253,7 +352,9 @@ async function playBase(){
 }
 $("start").onclick=async()=>{
  $("err").textContent="";if(!(await initAudio()))return;
- q=makeQ();if(!q)return;showQ();$("again").disabled=false;$("model").disabled=false;$("setup").open=false;
+ if(cfg.mode==="game"&&(!game||game.i>=10))game={i:0,scores:[],perf:0};
+ if(cfg.mode!=="game")game=null;
+ q=makeQ();if(!q)return;if(game)game.i++;showProg();showQ();$("again").disabled=false;$("model").disabled=false;$("setup").open=false;
  await playBase();
 };
 $("again").onclick=()=>{if(q)playBase()};
